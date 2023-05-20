@@ -11,12 +11,8 @@ Until now, Cyclistic’s marketing strategy relied on building general awareness
 
 My Role: In this scenario I am a junior data analyst at Cyclistic and my team has been tasked with the overall goal of designing marketing strategies for the company to grow their business revenue. 
 
-
 Overall Goal: Design marketing strategies aimed at converting casual riders into annual members.
-
-
 Business Question: "How do annual members and casual riders use Cyclistic bikes differently?"
-
 
 Below I will describe step-by-step the process I used to for this project. If you want to skip ahead to the business suggestions move onto the section "Insights".
 
@@ -53,18 +49,15 @@ df_apr <- read.csv("Cycles/csv files/202304-divvy-tripdata.csv")
 df_Cyclistic <- rbind(df_nov, df_dec, df_jan, df_feb, df_mar, df_apr)
 ```
 ```{r}
-
 View(df_Cyclistic)
 ```
 
 ## removing individual month data frames to clear up space 
-
 ```{r}
 remove(df_nov, df_dec, df_jan, df_feb, df_mar, df_apr)
 ```
 
 ## Create new data frame for Data wrangling
-
 ```{r}
 df_Cycling <- df_Cyclistic
 ```
@@ -79,14 +72,13 @@ typeof(df_Cycling$end_lng)
 
 
 ## creating columnds for: day of week, month, day, year, time, hour
-
 ```{r}
 df_Cycling["ride_lengths"] <- as_hms(difftime(df_Cycling$ended_at, df_Cycling$started_at))
 
 View(df_Cycling)
 ```
 
-Create a column called “day_of_week"
+# Create a column called “day_of_week"
 
 ```{r}
 df_Cycling['day_of_week'] <- wday(df_Cycling$started_at)
@@ -94,17 +86,13 @@ df_Cycling['day_of_week'] <- wday(df_Cycling$started_at)
 df_Cycling['day_of_week'] <- format(as.Date(df_Cycling$started_at), "%A")
 ```
 
-Let's deep dig it to identify new approaches to answering the business questions
+# Let's deep dig it to identify new approaches to answering the business questions
 
 ```{r}
 df_Cycling["date"] <- as.Date(df_Cycling$started_at) # formatting a new column date as yyyy-mm-dd, using start date
-
 df_Cycling["year"] <- format(as.Date(df_Cycling$date), "%Y") # Creating new column/feature for Year
-
 df_Cycling["month"] <- format(as.Date(df_Cycling$date), "%m") # Creating new column/feature for Month
-
 df_Cycling["day"] <- format(as.Date(df_Cycling$date), "%d")  # Creating new column/feature for Day
-
 ```
 
 ## Creating column for Season in an year
@@ -160,7 +148,6 @@ df_Cycling <- na.omit(df_Cycling)
 ```
 
 ##  Now There's no Null value, let's continue
-
 ## Removing Duplicates from data, if any exist
 
 ```{r}
