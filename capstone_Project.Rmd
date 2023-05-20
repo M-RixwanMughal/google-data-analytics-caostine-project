@@ -1,0 +1,473 @@
+---
+output:
+  word_document: default
+  html_document: default
+  pdf_document: default
+---
+# Background
+In 2016, Cyclistic launched a successful bike-share offering. Since then, the program has grown to a fleet of 5,824 bicycles that are geotracked and locked into a network of 692 stations across Chicago. The bikes can be unlocked from one station and returned to any other station in the system anytime.
+
+Until now, Cyclistic’s marketing strategy relied on building general awareness and appealing to broad consumer segments. One approach that helped make these things possible was the flexibility of its pricing plans: single-ride passes, full-day passes, and annual memberships. Customers who purchase single-ride or full-day passes are referred to as casual riders. Customers who purchase annual memberships are Cyclistic members.
+
+My Role: In this scenario I am a junior data analyst at Cyclistic and my team has been tasked with the overall goal of designing marketing strategies for the company to grow their business revenue. 
+
+
+Overall Goal: Design marketing strategies aimed at converting casual riders into annual members.
+
+
+Business Question: "How do annual members and casual riders use Cyclistic bikes differently?"
+
+
+Below I will describe step-by-step the process I used to for this project. If you want to skip ahead to the business suggestions move onto the section "Insights".
+
+## Let's load Required libraries 
+
+```{r}
+library(tidyverse) #for calculations
+library(lubridate) #for dates 
+library(hms) #for time and its formatting
+library(data.table) #for exporting data frame
+library(hms)
+library(dplyr)
+library(ggplot2)
+```
+
+## loading original .csv files, data from May 2022 to April 2023
+```{r}
+df_may <- read.csv("Cycles/csv files/202205-divvy-tripdata.csv")
+df_jun <- read.csv("Cycles/csv files/202206-divvy-tripdata.csv")
+df_jul <- read.csv("Cycles/csv files/202207-divvy-tripdata.csv")
+df_aug <- read.csv("Cycles/csv files/202208-divvy-tripdata.csv")
+df_sep <- read.csv("Cycles/csv files/202209-divvy-publictripdata.csv")
+df_oct <- read.csv("Cycles/csv files/202210-divvy-tripdata.csv")
+df_nov <- read.csv("Cycles/csv files/202211-divvy-tripdata.csv")
+df_dec <- read.csv("Cycles/csv files/202212-divvy-tripdata.csv")
+df_jan <- read.csv("Cycles/csv files/202301-divvy-tripdata.csv")
+df_feb <- read.csv("Cycles/csv files/202302-divvy-tripdata.csv")
+df_mar <- read.csv("Cycles/csv files/202303-divvy-tripdata.csv")
+df_apr <- read.csv("Cycles/csv files/202304-divvy-tripdata.csv")
+```
+
+## Let's merge all the data into a single dataframe
+```{r}
+df_Cyclistic <- rbind(df_nov, df_dec, df_jan, df_feb, df_mar, df_apr)
+```
+```{r}
+
+View(df_Cyclistic)
+```
+
+## removing individual month data frames to clear up space 
+
+```{r}
+remove(df_nov, df_dec, df_jan, df_feb, df_mar, df_apr)
+```
+
+## Create new data frame for Data wrangling
+
+```{r}
+df_Cycling <- df_Cyclistic
+```
+
+## Creating New column "ride_length"
+```{r}
+colnames(df_Cycling)
+```
+```{r}
+typeof(df_Cycling$end_lng)
+```
+
+
+## creating columnds for: day of week, month, day, year, time, hour
+
+```{r}
+df_Cycling["ride_lengths"] <- as_hms(difftime(df_Cycling$ended_at, df_Cycling$started_at))
+
+View(df_Cycling)
+```
+
+Create a column called “day_of_week"
+
+```{r}
+df_Cycling['day_of_week'] <- wday(df_Cycling$started_at)
+
+df_Cycling['day_of_week'] <- format(as.Date(df_Cycling$started_at), "%A")
+```
+
+Let's deep dig it to identify new approaches to answering the business questions
+
+```{r}
+df_Cycling["date"] <- as.Date(df_Cycling$started_at) # formatting a new column date as yyyy-mm-dd, using start date
+
+df_Cycling["year"] <- format(as.Date(df_Cycling$date), "%Y") # Creating new column/feature for Year
+
+df_Cycling["month"] <- format(as.Date(df_Cycling$date), "%m") # Creating new column/feature for Month
+
+df_Cycling["day"] <- format(as.Date(df_Cycling$date), "%d")  # Creating new column/feature for Day
+
+```
+
+## Creating column for Season in an year
+
+```{r}
+df_Cycling <- df_Cycling %>% 
+  mutate(season = 
+           case_when(month == "01" ~ "Winter",
+                     month == "02" ~ "Winter",
+                     month == "03" ~ "Spring",
+                     month == "04" ~ "Spring",
+                     month == "05" ~ "Spring",
+                     month == "06" ~ "Summer",
+                     month == "07" ~ "Summer",
+                     month == "08" ~ "Summer",
+                     month == "09" ~ "Fall",
+                     month == "10" ~ "Fall",
+                     month == "11" ~ "Fall",
+                     month == "12" ~ "Winter",
+                     )
+)
+```
+
+## Calculating average ride duration--------------------------------------------
+
+```{r}
+avg_ride_length <- mean(df_Cycling$ride_length)
+avg_ride_length
+```
+# Calculating Maximum ride duration
+
+```{r}
+max_ride_length <- max(df_Cycling$ride_length)
+max_ride_length
+```
+# Calculating Minimum ride duration
+
+```{r}
+min_ride_length <- min(df_Cycling$ride_length)
+min_ride_length
+```
+## Riding duration is in minimum which means this is not a valid data, we need to further validate it by removing misleading and unwanted data. 
+
+```{r}
+df_Cycling <- df_Cycling[!(df_Cycling$ride_length <= 0),]
+```
+---------
+Wrangling=======================================================================
+---------
+## LEt's Remove Null values from dataset
+```{r}
+df_Cycling <- na.omit(df_Cycling)
+```
+
+##  Now There's no Null value, let's continue
+
+## Removing Duplicates from data, if any exist
+
+```{r}
+df_Cycling <- distinct(df_Cycling)
+```
+
+# Remove any column that we don't need for further analysis
+
+```{r}
+colnames(df_Cycling) # To see columns names
+
+df_Cycling <- df_Cycling %>% 
+  select(-c(ride_id, start_station_name, start_station_id, end_station_name, end_station_id, start_lat, start_lng, end_lat, end_lng, ))
+```
+
+# Let's view the our final dataset
+```{r}
+View(df_Cycling)
+```
+
+## There are 2 riders type, 1. Member and 2. Casual, let's check their number
+```{r}
+member_type_count <- df_Cycling %>% 
+  group_by(member_casual) %>% 
+  count(member_casual)
+member_type_count
+```
+## Appearently Member riders are more than the Casual riders, let's see the percentage and visulize them
+
+```{r}
+ggplot(df_Cycling, aes(x = df_Cycling$member_casual, fill = df_Cycling$rideable_type)) + geom_bar() 
+```
+
+##  Let's see on which day of week people mostly use to ride
+```{r}
+df_Cycling %>% 
+  count(day_of_week) 
+```
+# Let's Visualie it
+
+```{r}
+ggplot(df_Cycling, aes(x = day_of_week, fill = rideable_type)) + geom_bar() 
+```
+# Conslusion: People used to ride the most on "Saturday" and a huge number of riders use to ride "Classic bikes"   
+
+## total rides of Week days by member type
+```{r}
+df_Cycling %>% 
+  group_by(member_casual) %>% 
+  count(day_of_week)
+```
+```{r}
+ggplot(df_Cycling, aes(x = day_of_week, fill = member_casual)) + geom_bar() 
+```
+# Average Riding duration by week days and Rider type
+```{r}
+df_Cycling %>%  
+  group_by(day_of_week) %>% 
+  summarise_at(vars(ride_length), list(time = mean))
+```
+
+```{r}
+df_Cycling %>%  
+  group_by(day_of_week, member_casual) %>% 
+  summarise_at(vars(ride_length), list(time = mean))
+```
+
+# Average Riding duration by Day of Month and Rider type
+
+```{r}
+df_Cycling %>% 
+  group_by(day) %>% 
+  summarise_at(vars(ride_length), list(time = mean))
+```
+```{r}
+df_Cycling %>% 
+  group_by(day, member_casual) %>% 
+  summarise_at(vars(ride_length), list(time = mean))
+```
+# Average Riding duration by Day of Month and Rider type
+
+```{r}
+df_Cycling %>% 
+  group_by(month) %>% 
+  summarise_at(vars(ride_length), list(time = mean))
+```
+
+```{r}
+df_Cycling %>% 
+  group_by(month, member_casual) %>% 
+  summarise_at(vars(ride_length), list(time = mean))
+```
+
+## Total rides by member type and bike type
+
+```{r}
+df_Cycling %>% 
+  group_by(member_casual, rideable_type) %>% 
+  count(rideable_type)
+```
+## Total Rides by bike type
+```{r}
+df_Cycling %>% 
+  group_by(rideable_type) %>% 
+  count(rideable_type)
+```
+
+# Day of month
+
+```{r}
+df_Cycling %>% 
+  group_by(member_casual) %>% 
+  count(day)
+```
+
+```{r}
+df_Cycling %>% 
+  count(day)
+```
+# Total monthly rides by Rider type
+
+```{r}
+df_Cycling %>% 
+  group_by(member_casual) %>% 
+  count(month)
+```
+
+# Total monthly rides
+
+```{r}
+df_Cycling %>% 
+  count(month)
+```
+
+# Let's explore the stats by seasons -------------------------------------------
+
+## --------------Winter Season----------
+
+```{r}
+df_Cycling %>% 
+  filter(season == "Winter") %>% 
+  count(season)
+```
+
+```{r}
+df_Cycling %>% 
+  group_by(member_casual) %>% 
+  filter(season == "Spring") %>% 
+  count(season)
+```
+
+```{r}
+df_Cycling %>% 
+  group_by(member_casual, rideable_type) %>% 
+  filter(season == "Winter") %>% 
+  count(season)
+```
+
+```{r}
+df_Cycling %>% 
+  filter(season == "Winter") %>% 
+  summarise_at(vars(ride_length), list(time = mean))
+```
+
+```{r}
+df_Cycling %>% 
+  group_by(member_casual) %>% 
+  filter(season == "Winter") %>% 
+  summarise_at(vars(ride_length), list(time = mean))
+```
+
+## --------------Spring Season----------
+
+```{r}
+df_Cycling %>% 
+  filter(season == "Spring") %>% 
+  count(season)
+```
+
+```{r}
+df_Cycling %>% 
+  group_by(member_casual) %>% 
+  filter(season == "Spring") %>% 
+  count(season)
+```
+
+```{r}
+df_Cycling %>% 
+  group_by(member_casual, rideable_type) %>% 
+  filter(season == "Spring") %>% 
+  count(season)
+```
+
+```{r}
+df_Cycling %>% 
+  filter(season == "Spring") %>% 
+  summarise_at(vars(ride_length), list(time = mean))
+```
+
+```{r}
+df_Cycling %>% 
+  group_by(member_casual) %>% 
+  filter(season == "Spring") %>% 
+  summarise_at(vars(ride_length), list(time = mean))
+```
+
+## --------------Summer Season----------
+
+```{r}
+df_Cycling %>% 
+  filter(season == "Summer") %>% 
+  count(season)
+```
+
+```{r}
+df_Cycling %>%
+  group_by(member_casual) %>% 
+  filter(season == "Summer") %>% 
+  count(season)
+```
+
+```{r}
+df_Cycling %>% 
+  group_by(member_casual, rideable_type) %>% 
+  filter(season == "Summer") %>% 
+  count(season)
+```
+
+```{r}
+df_Cycling %>% 
+  filter(season == "Summer") %>% 
+  summarise_at(vars(ride_length), list(time = mean))
+```
+
+```{r}
+df_Cycling %>% 
+  group_by(member_casual) %>% 
+  filter(season == "Summer") %>% 
+  summarise_at(vars(ride_length), list(time = mean))
+```
+
+## --------------Fall Season----------
+
+```{r}
+df_Cycling %>% 
+  filter(season == "Fall") %>% 
+  count(season)
+```
+
+```{r}
+df_Cycling %>%
+  group_by(member_casual) %>% 
+  filter(season == "Fall") %>% 
+  count(season)
+```
+
+```{r}
+df_Cycling %>% 
+  group_by(member_casual, rideable_type) %>% 
+  filter(season == "Fall") %>% 
+  count(season)
+```
+
+```{r}
+df_Cycling %>% 
+  filter(season == "Fall") %>% 
+  summarise_at(vars(ride_length), list(time = mean))
+```
+
+```{r}
+df_Cycling %>% 
+  group_by(member_casual) %>% 
+  filter(season == "Fall") %>% 
+  summarise_at(vars(ride_length), list(time = mean))
+```
+
+## --------------All Season----------
+
+```{r}
+df_Cycling %>% 
+  count(season)
+```
+
+```{r}
+df_Cycling %>% 
+  group_by(member_casual) %>% 
+  count(season)
+```
+
+```{r}
+df_Cycling %>% 
+  group_by(member_casual, rideable_type) %>% 
+  count(season)
+```
+
+```{r}
+df_Cycling %>% 
+  group_by(season) %>% 
+  summarise_at(vars(ride_length), list(time = mean))
+```
+
+```{r}
+df_Cycling %>% 
+  group_by(member_casual, season) %>% 
+  summarise_at(vars(ride_length), list(time = mean))
+```
+```{r}
+write.csv(df_Cycling, "Cyclistic_data_for_visualization.csv")
+```
+
